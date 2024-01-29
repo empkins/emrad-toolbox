@@ -1,5 +1,4 @@
 line-length = 120
-update-check = true
 target-version = "py38"
 
 select = [

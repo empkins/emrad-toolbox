@@ -33,7 +33,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 120
-target-version = "py38"
+target-version = ["py38"]
 exclude = '''
 (
   /(
@@ -57,7 +57,7 @@ _format_black = "black ."
 _format_ruff = "ruff . --fix-only --exit-zero"
 format = ["_format_black", "_format_ruff", "_format_black"]
 lint = { cmd = "ruff emrad_toolbox --fix", help = "Lint all files with ruff." }
-_lint_ci = "ruff emrad_toolbox --format=github"
+_lint_ci = "ruff emrad_toolbox --output-format github"
 _check_black = "black . --check"
 ci_check = { sequence = ["_check_black", "_lint_ci"], help = "Check all potential format and linting issues." }
 test = { cmd = "pytest --cov=emrad_toolbox --cov-report=term-missing --cov-report=xml", help = "Run Pytest with coverage." }

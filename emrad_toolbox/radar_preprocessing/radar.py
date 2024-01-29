@@ -1,74 +1,83 @@
-from typing import Dict
+"""emrad_toolbox radar - A collection of tools to handle Radar data, such as applying filters."""
+
+from typing import Dict, Tuple
 
 import numpy as np
-from scipy.signal import butter, filtfilt, decimate, hilbert
 from numba import njit
+from scipy.signal import butter, decimate, filtfilt, hilbert
 
 
 class RadarPreprocessor:
-
+    """RadarPreprocessor - A collection of static function to handle Radar data, such as applying filters."""
 
     @staticmethod
     @njit
     def calculate_angle(i: np.array, q: np.array) -> np.array:
-        """
-        Calculates the angle of the complex signal.
+        """Calculate the angle of the complex signal.
 
         :parameter i: The in-phase component of the complex signal.
         :parameter q: The quadrature component of the complex signal.
         :return: The angle of the complex signal.
         """
         tan = np.unwrap(np.arctan2(i, q))
-        angle = np.diff(
-            tan, axis=0, prepend=tan[0]
-        )
+        angle = np.diff(tan, axis=0, prepend=tan[0])
         return angle
 
     @staticmethod
     @njit
     def calculate_power(i: np.array, q: np.array) -> np.array:
-        """
-        Calculates the power of the complex signal.
+        """Calculate the power of the complex signal.
+
         :param i: The in-phase component of the complex signal.
         :param q: The quadrature component of the complex signal.
         :return: The power of the complex signal as a numpy array.
         """
-        return np.sqrt(
-            np.square(i.astype('float64')) + np.square(q.astype('float64'))
-        )
-
+        return np.sqrt(np.square(i.astype("float64")) + np.square(q.astype("float64")))
 
     @staticmethod
     @njit
-    def butterworth_band_pass_filter(i: np.array, q: np.array, high_pass_filter_cutoff_hz: float = 80,
-                                     low_pass_filter_cutoff: float = 18,
-                                     filter_order: int = 4, fs: int = 1000) -> Dict[str, np.array]:
-        """
-        Applies a Butterworth band pass filter to the complex signal with the specified order.
-        :param fs: The sampling frequency of the signal.
+    def butterworth_band_pass_filter(
+        i: np.array,
+        q: np.array,
+        filter_cutoff: Tuple[int, int] = (80, 18),
+        filter_order: int = 4,
+        fs: int = 1000,
+    ) -> Dict[str, np.array]:
+        """Apply a Butterworth band pass filter to the complex signal with the specified order.
+
         :param i: The in-phase component of the complex signal.
         :param q: The quadrature component of the complex signal.
-        :param high_pass_filter_cutoff_hz: The cutoff frequency of the high pass filter.
-        :param low_pass_filter_cutoff: The cutoff frequency of the low pass filter.
+        :param filter_cutoff: A tuple containing the lower and upper cutoff frequency of the band pass filter.
         :param filter_order: The order of the filter.
+        :param fs: The sampling frequency of the signal.
         :return: A dictionary containing the filtered in-phase and quadrature components as well as the magnitude.
         """
-
         filtering_dict = {}
-        b, a = butter(N=filter_order, Wn=[low_pass_filter_cutoff, high_pass_filter_cutoff_hz], btype="band",
-                      analog=False, fs=fs)
-        filtering_dict['I_band_pass'] = filtfilt(b, a, i, axis=0)
-        filtering_dict['Q_band_pass'] = filtfilt(b, a, q, axis=0)
-        filtering_dict['Magnitude_band_pass'] = RadarPreprocessor.calculate_power(filtering_dict['I_band_pass'],
-                                                                                  filtering_dict['Q_band_pass'])
+        b, a = butter(
+            N=filter_order,
+            Wn=[filter_cutoff[0], filter_cutoff[1]],
+            btype="band",
+            analog=False,
+            fs=fs,
+        )
+        filtering_dict["I_band_pass"] = filtfilt(b, a, i, axis=0)
+        filtering_dict["Q_band_pass"] = filtfilt(b, a, q, axis=0)
+        filtering_dict["Magnitude_band_pass"] = RadarPreprocessor.calculate_power(
+            filtering_dict["I_band_pass"], filtering_dict["Q_band_pass"]
+        )
         return filtering_dict
 
     @staticmethod
     @njit
-    def butterworth_high_pass_filtering(i: np.array, q: np.array, high_pass_filter_cutoff_hz: float = 0.1,
-                                        high_pass_filter_order: int = 4, fs: int = 1000) -> Dict[str, np.array]:
-        """
-        Applies a Butterworth high pass filter to the complex signal with the specified order.
+    def butterworth_high_pass_filtering(
+        i: np.array,
+        q: np.array,
+        high_pass_filter_cutoff_hz: float = 0.1,
+        high_pass_filter_order: int = 4,
+        fs: int = 1000,
+    ) -> Dict[str, np.array]:
+        """Apply a Butterworth high pass filter to the complex signal with the specified order.
+
         :param i: The in-phase component of the complex signal.
         :param q: The quadrature component of the complex signal.
         :param high_pass_filter_cutoff_hz: The cutoff frequency of the high pass filter.
@@ -76,40 +85,49 @@ class RadarPreprocessor:
         :param fs: The sampling frequency of the signal.
         :return:
         """
-
         filtering_dict = {}
-        b, a = butter(N=high_pass_filter_order, Wn=high_pass_filter_cutoff_hz, btype="high", analog=False,
-                      fs=fs)
-        filtering_dict['I_high_pass'] = filtfilt(b, a, i, axis=0).astype('int64')
-        filtering_dict['Q_high_pass'] = filtfilt(b, a, q, axis=0).astype('int64')
-        filtering_dict['Magnitude_high_pass'] = np.sqrt(
-            np.square(filtering_dict['I_high_pass']) + np.square(filtering_dict['Q_high_pass'])
+        b, a = butter(
+            N=high_pass_filter_order,
+            Wn=high_pass_filter_cutoff_hz,
+            btype="high",
+            analog=False,
+            fs=fs,
+        )
+        filtering_dict["I_high_pass"] = filtfilt(b, a, i, axis=0).astype("int64")
+        filtering_dict["Q_high_pass"] = filtfilt(b, a, q, axis=0).astype("int64")
+        filtering_dict["Magnitude_high_pass"] = np.sqrt(
+            np.square(filtering_dict["I_high_pass"]) + np.square(filtering_dict["Q_high_pass"])
         )
         return filtering_dict
 
     @staticmethod
     @njit
     def envelope(average_length: int = 100, magnitude: np.array = None) -> np.array:
-        """
-        Calculates the envelope of the complex signal.
+        """Calculate the envelope of the complex signal.
+
         :param average_length: The length of the averaging window.
         :param magnitude: The magnitude of the complex signal.
         :return: The envelope of the complex signal.
         """
-
         if magnitude is None:
-            raise ValueError("magnitude must be provided")
+            raise ValueError()
         return np.convolve(
             np.abs(hilbert(magnitude)).flatten(),
-            np.ones(average_length) / average_length, mode='same')
+            np.ones(average_length) / average_length,
+            mode="same",
+        )
 
     @staticmethod
     @njit
-    def low_pass_filtering(i: np.array, q: np.array,
-                           low_pass_filter_cutoff_hz: float = 10,
-                           low_pass_filter_order: int = 4, fs: int = 1000):
-        """
-        Applies a Butterworth low pass filter to the complex signal with the specified order.
+    def low_pass_filtering(
+        i: np.array,
+        q: np.array,
+        low_pass_filter_cutoff_hz: float = 10,
+        low_pass_filter_order: int = 4,
+        fs: int = 1000,
+    ):
+        """Apply a Butterworth low pass filter to the complex signal with the specified order.
+
         :param i: The in-phase component of the complex signal.
         :param q: The quadrature component of the complex signal.
         :param low_pass_filter_cutoff_hz: The cutoff frequency of the low pass filter.
@@ -117,29 +135,37 @@ class RadarPreprocessor:
         :param fs: Tje sampling frequency of the signal.
         :return: A dictionary containing the filtered in-phase and quadrature components.
         """
-        b, a = butter(N=low_pass_filter_order, Wn=low_pass_filter_cutoff_hz, btype="low", analog=False,
-                      fs=fs)
-        filtering_dict = {'I_low_pass': filtfilt(b, a, i, axis=0), 'Q_low_pass': filtfilt(b, a, q, axis=0)}
+        b, a = butter(
+            N=low_pass_filter_order,
+            Wn=low_pass_filter_cutoff_hz,
+            btype="low",
+            analog=False,
+            fs=fs,
+        )
+        filtering_dict = {
+            "I_low_pass": filtfilt(b, a, i, axis=0),
+            "Q_low_pass": filtfilt(b, a, q, axis=0),
+        }
         return filtering_dict
 
     @staticmethod
     @njit
     def downsample(downsampling_factor: int = 20, data_to_downsample: np.array = None) -> np.array:
-        """
-        Downsamples the data by the specified factor.
+        """Downsample the data by the specified factor.
+
         :param downsampling_factor: Factor by which the data should be downsampled.
         :param data_to_downsample: Data to be downsampled.
         :return: The downsampled data.
         """
         if data_to_downsample is None:
-            raise ValueError("data_to_downsample must be provided")
+            raise ValueError()
         return decimate(data_to_downsample, downsampling_factor, axis=0)
 
     @staticmethod
     @njit
     def calculate_displacement_vector(i: np.array, q: np.array, fs: float = 61e9, c_mps: float = 299708516) -> np.array:
-        """
-        Calculates the displacement vector of the complex signal.
+        """Calculate the displacement vector of the complex signal.
+
         :param i: The in-phase component of the complex signal.
         :param q: The quadrature component of the complex signal.
         :param fs: The sampling frequency of the signal.
@@ -157,12 +183,12 @@ class RadarPreprocessor:
         #    s_uu * uc +  s_uv * vc = (s_uuu + s_uvv)/2
         #    s_uv * uc +  s_vv * vc = (s_uuv + s_vvv)/2
         s_uv = np.sum(u * v)
-        s_uu = np.sum(u ** 2)
-        s_vv = np.sum(v ** 2)
-        s_uuv = np.sum(u ** 2 * v)
-        s_uvv = np.sum(u * v ** 2)
-        s_uuu = np.sum(u ** 3)
-        s_vvv = np.sum(v ** 3)
+        s_uu = np.sum(u**2)
+        s_vv = np.sum(v**2)
+        s_uuv = np.sum(u**2 * v)
+        s_uvv = np.sum(u * v**2)
+        s_uuu = np.sum(u**3)
+        s_vvv = np.sum(v**3)
 
         # Solving the linear system
         a = np.array([[s_uu, s_uv], [s_uv, s_vv]])
@@ -184,4 +210,8 @@ class RadarPreprocessor:
 
         radian_2_meter = c_mps / (4 * np.pi * fs)
         pw_unwrapped = np.unwrap(angle) * radian_2_meter
-        return {"PW_in_m": pw_unwrapped, "Residuals_mean_square": residu_1, "Receive_signal_strength": r_1}
+        return {
+            "PW_in_m": pw_unwrapped,
+            "Residuals_mean_square": residu_1,
+            "Receive_signal_strength": r_1,
+        }
