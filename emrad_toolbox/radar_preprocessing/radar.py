@@ -2,11 +2,14 @@ from typing import Dict
 
 import numpy as np
 from scipy.signal import butter, filtfilt, decimate, hilbert
+from numba import njit
 
 
 class RadarPreprocessor:
 
+
     @staticmethod
+    @njit
     def calculate_angle(i: np.array, q: np.array) -> np.array:
         """
         Calculates the angle of the complex signal.
@@ -22,6 +25,7 @@ class RadarPreprocessor:
         return angle
 
     @staticmethod
+    @njit
     def calculate_power(i: np.array, q: np.array) -> np.array:
         """
         Calculates the power of the complex signal.
@@ -30,10 +34,12 @@ class RadarPreprocessor:
         :return: The power of the complex signal as a numpy array.
         """
         return np.sqrt(
-            np.square(i).astype('int64') + np.square(q).astype('int64')
+            np.square(i.astype('float64')) + np.square(q.astype('float64'))
         )
 
+
     @staticmethod
+    @njit
     def butterworth_band_pass_filter(i: np.array, q: np.array, high_pass_filter_cutoff_hz: float = 80,
                                      low_pass_filter_cutoff: float = 18,
                                      filter_order: int = 4, fs: int = 1000) -> Dict[str, np.array]:
@@ -58,6 +64,7 @@ class RadarPreprocessor:
         return filtering_dict
 
     @staticmethod
+    @njit
     def butterworth_high_pass_filtering(i: np.array, q: np.array, high_pass_filter_cutoff_hz: float = 0.1,
                                         high_pass_filter_order: int = 4, fs: int = 1000) -> Dict[str, np.array]:
         """
@@ -81,6 +88,7 @@ class RadarPreprocessor:
         return filtering_dict
 
     @staticmethod
+    @njit
     def envelope(average_length: int = 100, magnitude: np.array = None) -> np.array:
         """
         Calculates the envelope of the complex signal.
@@ -96,6 +104,7 @@ class RadarPreprocessor:
             np.ones(average_length) / average_length, mode='same')
 
     @staticmethod
+    @njit
     def low_pass_filtering(i: np.array, q: np.array,
                            low_pass_filter_cutoff_hz: float = 10,
                            low_pass_filter_order: int = 4, fs: int = 1000):
@@ -114,6 +123,7 @@ class RadarPreprocessor:
         return filtering_dict
 
     @staticmethod
+    @njit
     def downsample(downsampling_factor: int = 20, data_to_downsample: np.array = None) -> np.array:
         """
         Downsamples the data by the specified factor.
@@ -126,6 +136,7 @@ class RadarPreprocessor:
         return decimate(data_to_downsample, downsampling_factor, axis=0)
 
     @staticmethod
+    @njit
     def calculate_displacement_vector(i: np.array, q: np.array, fs: float = 61e9, c_mps: float = 299708516) -> np.array:
         """
         Calculates the displacement vector of the complex signal.
