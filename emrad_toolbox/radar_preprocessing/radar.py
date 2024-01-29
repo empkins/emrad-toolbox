@@ -35,7 +35,6 @@ class RadarPreprocessor:
         return np.sqrt(np.square(i.astype("float64")) + np.square(q.astype("float64")))
 
     @staticmethod
-    @njit
     def butterworth_band_pass_filter(
         i: np.array,
         q: np.array,
@@ -68,7 +67,6 @@ class RadarPreprocessor:
         return filtering_dict
 
     @staticmethod
-    @njit
     def butterworth_high_pass_filtering(
         i: np.array,
         q: np.array,
@@ -101,7 +99,6 @@ class RadarPreprocessor:
         return filtering_dict
 
     @staticmethod
-    @njit
     def envelope(average_length: int = 100, magnitude: np.array = None) -> np.array:
         """Calculate the envelope of the complex signal.
 
@@ -118,7 +115,6 @@ class RadarPreprocessor:
         )
 
     @staticmethod
-    @njit
     def low_pass_filtering(
         i: np.array,
         q: np.array,
@@ -149,7 +145,6 @@ class RadarPreprocessor:
         return filtering_dict
 
     @staticmethod
-    @njit
     def downsample(downsampling_factor: int = 20, data_to_downsample: np.array = None) -> np.array:
         """Downsample the data by the specified factor.
 
@@ -162,7 +157,6 @@ class RadarPreprocessor:
         return decimate(data_to_downsample, downsampling_factor, axis=0)
 
     @staticmethod
-    @njit
     def calculate_displacement_vector(i: np.array, q: np.array, fs: float = 61e9, c_mps: float = 299708516) -> np.array:
         """Calculate the displacement vector of the complex signal.
 
