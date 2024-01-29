@@ -115,7 +115,7 @@ class RadarPreprocessor:
         )
 
     @staticmethod
-    def low_pass_filtering(
+    def butterworth_low_pass_filtering(
         i: np.array,
         q: np.array,
         low_pass_filter_cutoff_hz: float = 10,
@@ -142,6 +142,9 @@ class RadarPreprocessor:
             "I_low_pass": filtfilt(b, a, i, axis=0),
             "Q_low_pass": filtfilt(b, a, q, axis=0),
         }
+        filtering_dict["Magnitude_low_pass"] = np.sqrt(
+            np.square(filtering_dict["I_low_pass"]) + np.square(filtering_dict["Q_low_pass"])
+        )
         return filtering_dict
 
     @staticmethod

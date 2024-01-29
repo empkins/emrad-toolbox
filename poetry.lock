@@ -1205,6 +1205,31 @@ files = [
 psutil = "*"
 
 [[package]]
+name = "mne"
+version = "1.2.1"
+description = "MNE-Python project for MEG and EEG data analysis."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "mne-1.2.1-py3-none-any.whl", hash = "sha256:e5cc40a90e4aee580a07256600955701cc20bda347eb7a9214957835a4655cfc"},
+    {file = "mne-1.2.1.tar.gz", hash = "sha256:824d76baa84beabb0741dd9b11d38ead51fc3c7aaa13ba92325359afca182973"},
+]
+
+[package.dependencies]
+decorator = "*"
+jinja2 = "*"
+matplotlib = "*"
+numpy = ">=1.15.4"
+packaging = "*"
+pooch = ">=1.5"
+scipy = ">=1.1.0"
+tqdm = "*"
+
+[package.extras]
+hdf5 = ["h5io", "pymatreader"]
+test = ["EDFlib-Python", "check-manifest", "codespell", "eeglabio", "flake8", "flake8-array-spacing", "imageio-ffmpeg", "nbclient", "nitime", "numpydoc", "pybv", "pydocstyle", "pytest", "pytest-cov", "pytest-harvest", "pytest-timeout", "sphinx-gallery", "twine", "wheel"]
+
+[[package]]
 name = "mypy-extensions"
 version = "1.0.0"
 description = "Type system extensions for programs checked with the mypy type checker."
@@ -1683,6 +1708,27 @@ tomli = ">=1.2.2"
 
 [package.extras]
 poetry-plugin = ["poetry (>=1.0,<2.0)"]
+
+[[package]]
+name = "pooch"
+version = "1.8.0"
+description = "\"Pooch manages your Python library's sample data files: it automatically downloads and stores them in a local directory, with support for versioning and corruption checks.\""
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pooch-1.8.0-py3-none-any.whl", hash = "sha256:1bfba436d9e2ad5199ccad3583cca8c241b8736b5bb23fe67c213d52650dbb66"},
+    {file = "pooch-1.8.0.tar.gz", hash = "sha256:f59981fd5b9b5d032dcde8f4a11eaa492c2ac6343fae3596a2fdae35fc54b0a0"},
+]
+
+[package.dependencies]
+packaging = ">=20.0"
+platformdirs = ">=2.5.0"
+requests = ">=2.19.0"
+
+[package.extras]
+progress = ["tqdm (>=4.41.0,<5.0.0)"]
+sftp = ["paramiko (>=2.7.0)"]
+xxhash = ["xxhash (>=1.4.3)"]
 
 [[package]]
 name = "prompt-toolkit"
@@ -2583,4 +2629,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "72be35ac01a52cf7fe5ea493e6c3d52c73757edae202e4773d479bb0d0f2e854"
+content-hash = "f9296dcb995cb2a9b71c1de03709058f6e3e612e18b448759ff7651ccd341821"
