@@ -4,7 +4,7 @@ from typing import Dict, Tuple
 
 import numpy as np
 from numba import njit
-from scipy.signal import butter, decimate, filtfilt, hilbert
+from scipy.signal import butter, decimate, filtfilt, hilbert, sosfilt
 
 
 class RadarPreprocessor:
@@ -35,7 +35,6 @@ class RadarPreprocessor:
         return np.sqrt(np.square(i.astype("float64")) + np.square(q.astype("float64")))
 
     @staticmethod
-    @njit
     def butterworth_band_pass_filter(
         i: np.array,
         q: np.array,
@@ -68,7 +67,6 @@ class RadarPreprocessor:
         return filtering_dict
 
     @staticmethod
-    @njit
     def butterworth_high_pass_filtering(
         i: np.array,
         q: np.array,
@@ -101,7 +99,6 @@ class RadarPreprocessor:
         return filtering_dict
 
     @staticmethod
-    @njit
     def envelope(average_length: int = 100, magnitude: np.array = None) -> np.array:
         """Calculate the envelope of the complex signal.
 
@@ -118,8 +115,7 @@ class RadarPreprocessor:
         )
 
     @staticmethod
-    @njit
-    def low_pass_filtering(
+    def butterworth_low_pass_filtering(
         i: np.array,
         q: np.array,
         low_pass_filter_cutoff_hz: float = 10,
@@ -146,10 +142,12 @@ class RadarPreprocessor:
             "I_low_pass": filtfilt(b, a, i, axis=0),
             "Q_low_pass": filtfilt(b, a, q, axis=0),
         }
+        filtering_dict["Magnitude_low_pass"] = np.sqrt(
+            np.square(filtering_dict["I_low_pass"]) + np.square(filtering_dict["Q_low_pass"])
+        )
         return filtering_dict
 
     @staticmethod
-    @njit
     def downsample(downsampling_factor: int = 20, data_to_downsample: np.array = None) -> np.array:
         """Downsample the data by the specified factor.
 
@@ -162,7 +160,6 @@ class RadarPreprocessor:
         return decimate(data_to_downsample, downsampling_factor, axis=0)
 
     @staticmethod
-    @njit
     def calculate_displacement_vector(i: np.array, q: np.array, fs: float = 61e9, c_mps: float = 299708516) -> np.array:
         """Calculate the displacement vector of the complex signal.
 
@@ -215,3 +212,23 @@ class RadarPreprocessor:
             "Residuals_mean_square": residu_1,
             "Receive_signal_strength": r_1,
         }
+
+    @staticmethod
+    def calculate_pulse_wave_component(
+        displacement_vector: np.array, fs: float, order: int = 4, cut_off_values: Tuple[float, float] = (0.5, 20)
+    ) -> np.array:
+        """Calculate the pulse wave component from the displacement vector.
+
+        :param displacement_vector: The displacement vector of the complex signal.
+        :param fs: The sampling frequency of the signal.
+        :param order: The speed of light in meters per second.
+        :param cut_off_values: The cutoff values of the filter as a tuple (the lower value has to come first).
+        :return: The pulse wave component.
+        """
+        if cut_off_values[1] < cut_off_values[0]:
+            return RadarPreprocessor.calculate_pulse_wave_component(
+                displacement_vector, fs, order, (cut_off_values[1], cut_off_values[0])
+            )
+        sos = butter(N=order, Wn=[cut_off_values[0], cut_off_values[1]], output="sos", fs=fs, btype="bandpass")
+        pulse_wave = sosfilt(sos, displacement_vector)
+        return pulse_wave
