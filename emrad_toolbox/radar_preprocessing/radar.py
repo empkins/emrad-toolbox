@@ -212,3 +212,23 @@ class RadarPreprocessor:
             "Residuals_mean_square": residu_1,
             "Receive_signal_strength": r_1,
         }
+
+    @staticmethod
+    def calculate_pulse_wave_component(
+        displacement_vector: np.array, fs: float, order: int = 4, cut_off_values: Tuple[float, float] = (0.5, 20)
+    ) -> np.array:
+        """Calculate the pulse wave component from the displacement vector.
+
+        :param displacement_vector: The displacement vector of the complex signal.
+        :param fs: The sampling frequency of the signal.
+        :param order: The speed of light in meters per second.
+        :param cut_off_values: The cutoff values of the filter as a tuple (the lower value has to come first).
+        :return: The pulse wave component.
+        """
+        if cut_off_values[1] < cut_off_values[0]:
+            return RadarPreprocessor.calculate_pulse_wave_component(
+                displacement_vector, fs, order, (cut_off_values[1], cut_off_values[0])
+            )
+        sos = butter(N=order, Wn=[cut_off_values[0], cut_off_values[1]], output="sos", fs=fs, btype="bandpass")
+        pulse_wave = filtfilt(sos, displacement_vector)
+        return pulse_wave
