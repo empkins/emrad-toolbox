@@ -40,7 +40,7 @@ class RadarPreprocessor:
         q: np.array,
         filter_cutoff: Tuple[int, int] = (80, 18),
         filter_order: int = 4,
-        fs: int = 1000,
+        fs: float = 1000,
     ) -> Dict[str, np.array]:
         """Apply a Butterworth band pass filter to the complex signal with the specified order.
 
@@ -72,7 +72,7 @@ class RadarPreprocessor:
         q: np.array,
         high_pass_filter_cutoff_hz: float = 0.1,
         high_pass_filter_order: int = 4,
-        fs: int = 1000,
+        fs: float = 1000,
     ) -> Dict[str, np.array]:
         """Apply a Butterworth high pass filter to the complex signal with the specified order.
 
@@ -120,7 +120,7 @@ class RadarPreprocessor:
         q: np.array,
         low_pass_filter_cutoff_hz: float = 10,
         low_pass_filter_order: int = 4,
-        fs: int = 1000,
+        fs: float = 1000,
     ):
         """Apply a Butterworth low pass filter to the complex signal with the specified order.
 
