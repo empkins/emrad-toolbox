@@ -170,8 +170,8 @@ class RadarPreprocessor:
         :return: A dictionary containing the displacement vector.
         """
         # coordinates of the barycenter
-        i_m = np.mean(i)
-        q_m = np.mean(q)
+        i_m = np.mean(i.astype("float64"))
+        q_m = np.mean(q.astype("float64"))
 
         # reduce to local WCS
         u = i - i_m
