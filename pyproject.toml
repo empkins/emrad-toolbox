@@ -12,6 +12,8 @@ numpy = "<1.25,>=1.19"
 neurokit2 = "^0.2.7"
 scipy = "^1.12.0"
 numba = "^0.58.1"
+pywavelets = "^1.5.0"
+emd-signal = "^1.5.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"
