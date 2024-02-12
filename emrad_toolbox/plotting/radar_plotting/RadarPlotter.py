@@ -30,12 +30,12 @@ class RadarPlotter:
             radar_signal = np.abs(radar_signal)
         t = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
 
-        if ax is None:
-            _, ax = plt.subplots()
+        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         ax.plot(t, radar_signal)
         ax.set_title(f"Magnitude {signal_type}")
         ax.set_ylabel("")
         ax.set_xlabel("Time [sec]")
+        return fig
 
     @staticmethod
     def plot_wavelet(  # noqa: PLR0913
@@ -71,10 +71,7 @@ class RadarPlotter:
         coefficients, frequencies = pywt.cwt(radar_signal, scales, wavelet_type)
         time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
 
-        if ax is not None:
-            fig = ax.figure
-        else:
-            fig, ax = plt.subplots()
+        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         cax = ax.imshow(
             np.abs(coefficients),
             aspect="auto",
@@ -86,6 +83,7 @@ class RadarPlotter:
         ax.set_ylabel("Scale (Inverse of Frequency)")
         ax.set_xlabel("Time (seconds)")
         ax.set_title(f"Wavelet Transform of Magnitude with {wavelet_type} wavelet {signal_type}")
+        return fig
 
     @staticmethod
     def plot_fft_spectrogram(radar_signal, sampling_rate, decibel_as_unit: bool = True, signal_type: str = "", ax=None):
@@ -105,10 +103,7 @@ class RadarPlotter:
             radar_signal = np.abs(radar_signal)
         f, t, sxx = spectrogram(radar_signal, sampling_rate, return_onesided=False)
         label = "Magnitude "
-        if ax is not None:
-            fig = ax.figure
-        else:
-            fig, ax = plt.subplots()
+        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
 
         sxx_shifted = fft.fftshift(sxx)
         if decibel_as_unit:
@@ -120,6 +115,7 @@ class RadarPlotter:
         ax.set_xlabel("Time [sec]")
         ax.set_ylim([-80, 80])
         fig.colorbar(cax, ax=ax, label=label)
+        return fig
 
     @staticmethod
     def plot_fft_phase_spectrogram(
@@ -179,10 +175,7 @@ class RadarPlotter:
         frequencies_shifted = np.fft.fftshift(frequencies)
         if dB_as_unit:
             zxx_shifted = 10 * np.log10(np.abs(zxx_shifted))
-        if ax is not None:
-            fig = ax.figure
-        else:
-            fig, ax = plt.subplots()
+        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         cax = ax.pcolormesh(times, frequencies_shifted, zxx_shifted, shading="nearest")
         ax.set_title(f"STFT Spectrogram {signal_type}")
         if y_lim is not None and len(y_lim) == 2:
@@ -192,7 +185,7 @@ class RadarPlotter:
         ax.set_ylabel("Frequency [Hz]")
         ax.set_xlabel("Time [sec]")
         fig.colorbar(cax, ax=ax, label=label)
-        plt.show()
+        return fig
 
     @staticmethod
     def plot_derivative_stft_spectrogram(  # noqa: PLR0913
@@ -257,3 +250,4 @@ class RadarPlotter:
             axs[i].plot(time, imfs[i])
             axs[i].set_title(f"IMF {i + 1}")
         fig.tight_layout()
+        return fig
