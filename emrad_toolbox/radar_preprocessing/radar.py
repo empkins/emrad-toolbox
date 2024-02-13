@@ -38,7 +38,7 @@ class RadarPreprocessor:
     def butterworth_band_pass_filter(
         i: np.array,
         q: np.array,
-        filter_cutoff: Tuple[int, int] = (80, 18),
+        filter_cutoff: Tuple[int, int] = (18, 80),
         filter_order: int = 4,
         fs: float = 1000,
     ) -> Dict[str, np.array]:
@@ -232,3 +232,84 @@ class RadarPreprocessor:
         sos = butter(N=order, Wn=[cut_off_values[0], cut_off_values[1]], output="sos", fs=fs, btype="bandpass")
         pulse_wave = sosfilt(sos, displacement_vector)
         return pulse_wave
+
+    @staticmethod
+    def apply_matched_filter(radar_signal, expected_signal):
+        """
+        Apply a matched filter to a complex radar signal.
+
+        The matched filter is created by taking the complex conjugate of the expected signal and reversing it in time.
+        The radar signal is then convolved with this matched filter.
+
+        :param radar_signal: The complex radar signal to which the matched filter is to be applied.
+        :param expected_signal: The expected signal used to create the matched filter.
+        :return: The filtered signal after applying the matched filter.
+        """
+        matched_filter = np.conj(expected_signal[::-1])
+        filtered_signal = np.convolve(radar_signal, matched_filter, mode="same")
+        return filtered_signal
+
+    @staticmethod
+    def _create_trajectory_matrix(radar_signal, window_size):
+        rows = []
+        for i in range(len(radar_signal) - window_size + 1):
+            window = radar_signal[i : i + window_size]
+            rows.append(window)
+        trajectory_matrix = np.array(rows)
+        return trajectory_matrix
+
+    @staticmethod
+    def _calculate_svd(trajectory_matrix):
+        u, s, vh = np.linalg.svd(trajectory_matrix, full_matrices=False)
+        return u, s, vh
+
+    @staticmethod
+    def calculate_svd(radar_signal, window_size):
+        """
+        Calculate the Singular Value Decomposition (SVD) of a radar signal.
+
+        This function creates a trajectory matrix from the radar signal with a specified window size.
+        It then calculates the SVD of this trajectory matrix.
+
+        :param radar_signal: The radar signal from which the SVD is to be calculated.
+        :param window_size: The size of the window for the trajectory matrix.
+        :return: The U, S, and V^H matrices of the SVD.
+        """
+        trajectory_matrix = RadarPreprocessor._create_trajectory_matrix(radar_signal, window_size)
+        u, s, vh = RadarPreprocessor._calculate_svd(trajectory_matrix)
+        return u, s, vh
+
+    @staticmethod
+    def matched_filter(radar_signal, expected_signal):
+        """
+        Apply a matched filter to a complex radar signal.
+
+        The matched filter is created by taking the complex conjugate of the expected signal and reversing it in time.
+        The radar signal is then convolved with this matched filter.
+
+        :param radar_signal: The complex radar signal to which the matched filter is to be applied.
+        :param expected_signal: The expected signal used to create the matched filter.
+        :return: The filtered signal after applying the matched filter.
+        """
+        matched_filter = np.conj(expected_signal[::-1])
+        filtered_signal = np.convolve(radar_signal, matched_filter, mode="same")
+        return filtered_signal
+
+    @staticmethod
+    def svd_and_matched_filter(radar_signal, window_size):
+        """
+        Calculate the Singular Value Decomposition (SVD) of a radar signal and apply a matched filter.
+
+        This function creates a trajectory matrix from the radar signal with a specified window size.
+        It then calculates the SVD of this trajectory matrix.
+        The matched filter is then applied to the radar signal.
+
+        :param radar_signal: The complex radar signal to which the SVD and matched filter are to be applied.
+        :param window_size: The size of the window for the trajectory matrix.
+        :return: The filtered signal after applying the matched filter.
+        """
+        u, s, vh = RadarPreprocessor.calculate_svd(radar_signal, window_size)
+        filtered_signals = []
+        for i in range(len(s)):
+            filtered_signals.append(RadarPreprocessor.matched_filter(radar_signal, vh[i]))
+        return filtered_signals

@@ -251,3 +251,22 @@ class RadarPlotter:
             axs[i].set_title(f"IMF {i + 1}")
         fig.tight_layout()
         return fig
+
+    @staticmethod
+    def plot_svd(vh, signal_type: str = "", radar_sampling_rate: int = 1):
+        """
+        Plot the Singular Value Decomposition (SVD) of a radar signal.
+
+        Parameters
+        ----------
+        :param vh : The right singular vectors of the SVD.
+        :param signal_type : The type of the signal. Defaults to an empty string.
+        :param radar_sampling_rate : The sampling rate of the radar signal. Defaults to 1.
+        """
+        fig, ax = plt.subplots(len(vh))
+        for i in range(len(vh)):
+            ax[i] = RadarPlotter.plot_stft_spectrogram(vh[i], sampling_rate=radar_sampling_rate)
+            ax[i].set_title(f"SVD {i} {signal_type}")
+            ax[i].set_xlabel("Time")
+            ax[i].set_ylabel("Magnitude")
+        return fig
