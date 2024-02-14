@@ -93,6 +93,7 @@ class RadarPlotter:
         y_lim: Optional[List[int]] = None,
         signal_type: str = "",
         ax=None,
+        **kwargs,
     ):
         """
         Plot the FFT spectrogram of a radar signal.
@@ -109,7 +110,9 @@ class RadarPlotter:
         """
         if np.any(np.iscomplex(radar_signal)):
             radar_signal = np.abs(radar_signal)
-        f, t, sxx = spectrogram(radar_signal, sampling_rate, return_onesided=False)
+        f, t, sxx = spectrogram(
+            radar_signal, sampling_rate, return_onesided=not np.any(np.iscomplex(radar_signal)), **kwargs
+        )
         label = "Magnitude "
         fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         sxx_shifted = fft.fftshift(sxx)
@@ -161,6 +164,7 @@ class RadarPlotter:
         decibel_as_unit: bool = True,
         signal_type: str = "",
         ax=None,
+        **kwargs,
     ):
         """
         Plot the STFT spectrogram of a radar signal.
@@ -186,6 +190,7 @@ class RadarPlotter:
             return_onesided=not np.any(np.iscomplex(radar_signal)),
             nperseg=nperseg,
             noverlap=noverlap,
+            **kwargs,
         )
         zxx_shifted = np.fft.fftshift(zxx, axes=0)
         frequencies_shifted = np.fft.fftshift(frequencies)
@@ -214,6 +219,7 @@ class RadarPlotter:
         decibel_as_unit: bool = True,
         signal_type: str = "",
         ax=None,
+        **kwargs,
     ):
         """
         Plot the derivative STFT spectrogram of a radar signal.
@@ -231,7 +237,16 @@ class RadarPlotter:
         :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
         """
         RadarPlotter.plot_stft_spectrogram(
-            np.gradient(radar_signal), sampling_rate, nperseg, noverlap, y_lim, c_lim, decibel_as_unit, signal_type, ax
+            np.gradient(radar_signal),
+            sampling_rate,
+            nperseg,
+            noverlap,
+            y_lim,
+            c_lim,
+            decibel_as_unit,
+            signal_type,
+            ax,
+            **kwargs,
         )
 
     @staticmethod
