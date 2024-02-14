@@ -86,7 +86,14 @@ class RadarPlotter:
         return fig
 
     @staticmethod
-    def plot_fft_spectrogram(radar_signal, sampling_rate, decibel_as_unit: bool = True, signal_type: str = "", ax=None):
+    def plot_fft_spectrogram(  # noqa: PLR0913
+        radar_signal,
+        sampling_rate,
+        decibel_as_unit: bool = True,
+        y_lim: Optional[List[int]] = None,
+        signal_type: str = "",
+        ax=None,
+    ):
         """
         Plot the FFT spectrogram of a radar signal.
 
@@ -95,6 +102,7 @@ class RadarPlotter:
         :param radar_signal : The radar signal to plot.
         :param sampling_rate : The sampling rate of the radar signal.
         :param decibel_as_unit: If True, uses decibels as the unit for the spectrogram. Defaults to True.
+        :param y_lim : The limits for the y-axis. Defaults to None.
         :param signal_type : The type of the signal. Defaults to an empty string.
         :param ax : The axes object to draw the plot on. If None, a new figure and axes
         are created.
@@ -104,7 +112,6 @@ class RadarPlotter:
         f, t, sxx = spectrogram(radar_signal, sampling_rate, return_onesided=False)
         label = "Magnitude "
         fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
-
         sxx_shifted = fft.fftshift(sxx)
         if decibel_as_unit:
             sxx_shifted = 10 * np.log10(sxx_shifted)
@@ -113,13 +120,19 @@ class RadarPlotter:
         ax.set_title(f"Spectrogram (FFT {signal_type})")
         ax.set_ylabel("Frequency [Hz]")
         ax.set_xlabel("Time [sec]")
-        ax.set_ylim([-80, 80])
+        if y_lim is not None and len(y_lim) == 2:
+            ax.set_ylim(y_lim)
         fig.colorbar(cax, ax=ax, label=label)
         return fig
 
     @staticmethod
-    def plot_fft_phase_spectrogram(
-        radar_signal, sampling_rate, decibel_as_unit: bool = True, signal_type: str = "", ax=None
+    def plot_fft_phase_spectrogram(  # noqa: PLR0913
+        radar_signal,
+        sampling_rate,
+        decibel_as_unit: bool = True,
+        y_lim: Optional[List[int]] = None,
+        signal_type: str = "",
+        ax=None,
     ):
         """
         Plot the FFT phase spectrogram of a radar signal.
@@ -129,10 +142,13 @@ class RadarPlotter:
         :param radar_signal : The radar signal to plot.
         :param sampling_rate : The sampling rate of the radar signal.
         :param decibel_as_unit : If True, uses decibels as the unit for the spectrogram. Defaults to True.
+        :param y_lim : The limits for the y-axis. Defaults to None.
         :param signal_type : The type of the signal. Defaults to an empty string.
         :param ax : The axes object to draw the plot on. If None, a new figure and axes are created.
         """
-        RadarPlotter.plot_fft_spectrogram(np.angle(radar_signal), sampling_rate, decibel_as_unit, signal_type, ax)
+        RadarPlotter.plot_fft_spectrogram(
+            np.angle(radar_signal), sampling_rate, decibel_as_unit, y_lim, signal_type, ax
+        )
 
     @staticmethod
     def plot_stft_spectrogram(  # noqa: PLR0913
@@ -142,7 +158,7 @@ class RadarPlotter:
         noverlap: int = 384,
         y_lim: Optional[List[int]] = None,
         c_lim: Optional[List[int]] = None,
-        dB_as_unit: bool = True,  # noqa: N803
+        decibel_as_unit: bool = True,
         signal_type: str = "",
         ax=None,
     ):
@@ -157,23 +173,23 @@ class RadarPlotter:
         :param noverlap : The number of points to overlap between segments. Defaults to 384.
         :param y_lim : The limits for the y-axis. Defaults to None.
         :param c_lim : The limits for the colorbar. Defaults to None.
-        :param dB_as_unit : If True, uses decibels as the unit for the spectrogram. Defaults to True.
+        :param decibel_as_unit : If True, uses decibels as the unit for the spectrogram. Defaults to True.
         :param signal_type : The type of the signal. Defaults to an empty string.
         :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
         """
         label = "Magnitude "
-        if dB_as_unit:
+        if decibel_as_unit:
             label += "[dB]"
         frequencies, times, zxx = stft(
             radar_signal,
             sampling_rate,
-            return_onesided=np.any(np.iscomplex(radar_signal)),
+            return_onesided=not np.any(np.iscomplex(radar_signal)),
             nperseg=nperseg,
             noverlap=noverlap,
         )
         zxx_shifted = np.fft.fftshift(zxx, axes=0)
         frequencies_shifted = np.fft.fftshift(frequencies)
-        if dB_as_unit:
+        if decibel_as_unit:
             zxx_shifted = 10 * np.log10(np.abs(zxx_shifted))
         fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         cax = ax.pcolormesh(times, frequencies_shifted, zxx_shifted, shading="nearest")
@@ -253,7 +269,7 @@ class RadarPlotter:
         return fig
 
     @staticmethod
-    def plot_svd(vh, signal_type: str = "", radar_sampling_rate: int = 1):
+    def plot_svd(vh, signal_type: str = "", radar_sampling_rate: int = 1, y_lim: Optional[List[int]] = None):
         """
         Plot the Singular Value Decomposition (SVD) of a radar signal.
 
@@ -262,10 +278,11 @@ class RadarPlotter:
         :param vh : The right singular vectors of the SVD.
         :param signal_type : The type of the signal. Defaults to an empty string.
         :param radar_sampling_rate : The sampling rate of the radar signal. Defaults to 1.
+        :param y_lim : The limits for the y-axis. Defaults to None.
         """
-        fig, ax = plt.subplots(len(vh))
+        fig, ax = plt.subplots(len(vh), figsize=(10, 5 * len(vh)))
         for i in range(len(vh)):
-            ax[i] = RadarPlotter.plot_stft_spectrogram(vh[i], sampling_rate=radar_sampling_rate)
+            RadarPlotter.plot_stft_spectrogram(vh[i], sampling_rate=radar_sampling_rate, ax=ax[i], y_lim=y_lim)
             ax[i].set_title(f"SVD {i} {signal_type}")
             ax[i].set_xlabel("Time")
             ax[i].set_ylabel("Magnitude")
