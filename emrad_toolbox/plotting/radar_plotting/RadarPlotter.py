@@ -110,9 +110,7 @@ class RadarPlotter:
         """
         if np.any(np.iscomplex(radar_signal)):
             radar_signal = np.abs(radar_signal)
-        f, t, sxx = spectrogram(
-            radar_signal, sampling_rate, return_onesided=not np.any(np.iscomplex(radar_signal)), **kwargs
-        )
+        f, t, sxx = spectrogram(radar_signal, sampling_rate, return_onesided=False, **kwargs)
         label = "Magnitude "
         fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         sxx_shifted = fft.fftshift(sxx)
