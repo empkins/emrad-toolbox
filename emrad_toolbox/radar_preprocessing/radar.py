@@ -1,10 +1,15 @@
 """emrad_toolbox radar - A collection of tools to handle Radar data, such as applying filters."""
 
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
+import pywt
 from numba import njit
-from scipy.signal import butter, decimate, filtfilt, hilbert, sosfilt
+from scipy.signal import butter, decimate, filtfilt, find_peaks, hilbert, sosfilt
+
+from emrad_toolbox.radar_preprocessing.preprocessing_exceptions import (
+    ScalingFactorsNotProvidedError,
+)
 
 
 class RadarPreprocessor:
@@ -160,12 +165,14 @@ class RadarPreprocessor:
         return decimate(data_to_downsample, downsampling_factor, axis=0)
 
     @staticmethod
-    def calculate_displacement_vector(i: np.array, q: np.array, fs: float = 61e9, c_mps: float = 299708516) -> np.array:
+    def calculate_displacement_vector(
+        i: np.array, q: np.array, radar_frequency: float = 61e9, c_mps: float = 299708516
+    ) -> np.array:
         """Calculate the displacement vector of the complex signal.
 
         :param i: The in-phase component of the complex signal.
         :param q: The quadrature component of the complex signal.
-        :param fs: The sampling frequency of the signal.
+        :param radar_frequency: The frequency of the radar signal.
         :param c_mps: The speed of light in meters per second.
         :return: A dictionary containing the displacement vector.
         """
@@ -205,7 +212,7 @@ class RadarPreprocessor:
 
         angle = np.arctan2(ic, qc)
 
-        radian_2_meter = c_mps / (4 * np.pi * fs)
+        radian_2_meter = c_mps / (4 * np.pi * radar_frequency)
         pw_unwrapped = np.unwrap(angle) * radian_2_meter
         return {
             "PW_in_m": pw_unwrapped,
@@ -313,3 +320,47 @@ class RadarPreprocessor:
         for i in range(len(s)):
             filtered_signals.append(RadarPreprocessor.matched_filter(radar_signal, vh[i]))
         return filtered_signals
+
+    @staticmethod
+    def calculate_optimum_scaling_factor(
+        radar_signal: np.array, sampling_rate: float = 1953.125, scaling_factor_range: List[int] = [0, 100]
+    ) -> Tuple[int, np.array]:
+        """
+        Calculate the optimum scaling factor for the Continuous Wavelet Transform (CWT) of a radar signal.
+
+        The algorithm behind this function is by Tomii and Ohtsuki (2015)
+
+        :param radar_signal:
+        :param sampling_rate:
+        :param scaling_factor_range:
+        :return: scaling factor
+        """
+        # Check if radar_signal is complex, if so calculate the power of the signal
+        if np.any(np.iscomplex(radar_signal)):
+            radar_signal = np.abs(radar_signal)
+        if scaling_factor_range is None or len(scaling_factor_range) != 2:
+            raise ScalingFactorsNotProvidedError()
+
+        peaks = np.zeros(scaling_factor_range[1] - scaling_factor_range[0] + 1, dtype=int)
+        sampling_period = len(radar_signal) / sampling_rate
+        min_distance = 0.5 * sampling_rate
+        if sampling_period < 0.3:
+            raise ValueError("TimePeriodTooSmallError")
+        gathered_coefficients = []
+        for i in range(scaling_factor_range[0], scaling_factor_range[1] + 1):
+            # Peak detection with min interval 500ms
+            coefficients, frequencies = pywt.cwt(
+                radar_signal, scales=i, wavelet="morl", sampling_period=sampling_period, method="conv"
+            )
+            gathered_coefficients.append(coefficients)
+            a = len(find_peaks(coefficients[0], distance=min_distance)[0])
+            peaks[i - scaling_factor_range[0]] = int(a)
+        # find the most frequent value in the peaks
+        p_m = np.bincount(peaks).argmax()
+        i = scaling_factor_range[0]
+        while peaks[i - scaling_factor_range[0]] == p_m and i < scaling_factor_range[1]:
+            i += 1
+        return (
+            i,
+            gathered_coefficients[i - scaling_factor_range[0]][0],
+        )

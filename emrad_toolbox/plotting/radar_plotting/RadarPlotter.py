@@ -6,6 +6,8 @@ import pywt
 from PyEMD import EMD
 from scipy import fft
 from scipy.signal import spectrogram, stft
+from scipy.stats import scoreatpercentile
+from sklearn.preprocessing import StandardScaler
 
 from emrad_toolbox.plotting.radar_plotting.PlottingExceptions import WaveletCoefficientsNotProvidedError
 
@@ -79,6 +81,165 @@ class RadarPlotter:
             extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
         )
         fig.colorbar(cax, ax=ax, label="Magnitude")
+        ax.set_yscale("log")
+        ax.set_ylabel("Scale (Inverse of Frequency)")
+        ax.set_xlabel("Time (seconds)")
+        ax.set_title(f"Wavelet Transform of Magnitude with {wavelet_type} wavelet {signal_type}")
+        return fig
+
+    @staticmethod
+    def plot_wavelet_adaptive_thresholding(  # noqa: PLR0913
+        radar_signal: np.array,
+        sampling_rate: float,
+        plot_magnitude: bool = False,
+        wavelet_type: str = "morl",
+        wavelet_coefficients: Tuple[int, int] = (1, 256),
+        signal_type: str = "",
+        ax=None,
+        threshold_factor: float = 3.0,
+    ):
+        """
+        Plot the wavelet transform of a radar signal.
+
+        Parameters
+        ----------
+        :param radar_signal: The radar signal to plot.
+        :param sampling_rate : The sampling rate of the radar signal.
+        :param plot_magnitude: If True, plots the magnitude of the radar signal. Defaults to False.
+        :param wavelet_type : The type of the wavelet to use for the transform. Defaults to 'morl'.
+        :param wavelet_coefficients : The range of scales to use for the wavelet transform.
+        Defaults to (1, 256).
+        :param signal_type : The type of the signal. Defaults to an empty string.
+        :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
+        :param threshold_factor: The factor to multiply the standard deviation by to get the threshold. Defaults to 3.0.
+        """
+        if wavelet_coefficients is None:
+            raise WaveletCoefficientsNotProvidedError()
+
+        if plot_magnitude:
+            radar_signal = np.abs(radar_signal)
+
+        scales = np.arange(wavelet_coefficients[0], wavelet_coefficients[1])
+        coefficients, frequencies = pywt.cwt(radar_signal, scales, wavelet_type)
+        time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
+
+        # Apply adaptive threshold to coefficients
+        threshold = np.mean(np.abs(coefficients)) + threshold_factor * np.std(np.abs(coefficients))
+        coefficients = np.where(np.abs(coefficients) > threshold, threshold, np.abs(coefficients))
+
+        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
+        cax = ax.imshow(
+            coefficients,
+            aspect="auto",
+            cmap="jet",
+            extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+        )
+        fig.colorbar(cax, ax=ax, label="Magnitude (Adaptive Threshold)")
+        ax.set_yscale("log")
+        ax.set_ylabel("Scale (Inverse of Frequency)")
+        ax.set_xlabel("Time (seconds)")
+        ax.set_title(f"Wavelet Transform of Magnitude with {wavelet_type} wavelet {signal_type}")
+        return fig
+
+    @staticmethod
+    def plot_wavelet_z_scaled(  # noqa: PLR0913
+        radar_signal: np.array,
+        sampling_rate: float,
+        plot_magnitude: bool = False,
+        wavelet_type: str = "morl",
+        wavelet_coefficients: Tuple[int, int] = (1, 256),
+        signal_type: str = "",
+        ax=None,
+    ):
+        """
+        Plot the wavelet transform of a radar signal.
+
+        Parameters
+        ----------
+        :param radar_signal: The radar signal to plot.
+        :param sampling_rate : The sampling rate of the radar signal.
+        :param plot_magnitude: If True, plots the magnitude of the radar signal. Defaults to False.
+        :param wavelet_type : The type of the wavelet to use for the transform. Defaults to 'morl'.
+        :param wavelet_coefficients : The range of scales to use for the wavelet transform.
+        Defaults to (1, 256).
+        :param signal_type : The type of the signal. Defaults to an empty string.
+        :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
+        """
+        if wavelet_coefficients is None:
+            raise WaveletCoefficientsNotProvidedError()
+
+        if plot_magnitude:
+            radar_signal = np.abs(radar_signal)
+
+        scales = np.arange(wavelet_coefficients[0], wavelet_coefficients[1])
+        coefficients, frequencies = pywt.cwt(radar_signal, scales, wavelet_type)
+        time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
+
+        # Apply standard scaling to coefficients
+        scaler = StandardScaler()
+        coefficients = scaler.fit_transform(np.abs(coefficients))
+
+        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
+        cax = ax.imshow(
+            coefficients,
+            aspect="auto",
+            cmap="jet",
+            extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+        )
+        fig.colorbar(cax, ax=ax, label="Magnitude (Standard Scaled)")
+        ax.set_yscale("log")
+        ax.set_ylabel("Scale (Inverse of Frequency)")
+        ax.set_xlabel("Time (seconds)")
+        ax.set_title(f"Wavelet Transform of Magnitude with {wavelet_type} wavelet {signal_type}")
+        return fig
+
+    @staticmethod
+    def plot_wavelet_percentile_scaled(  # noqa: PLR0913
+        radar_signal: np.array,
+        sampling_rate: float,
+        plot_magnitude: bool = False,
+        wavelet_type: str = "morl",
+        wavelet_coefficients: Tuple[int, int] = (1, 256),
+        signal_type: str = "",
+        ax=None,
+    ):
+        """
+        Plot the wavelet transform of a radar signal.
+
+        Parameters
+        ----------
+        :param radar_signal: The radar signal to plot.
+        :param sampling_rate : The sampling rate of the radar signal.
+        :param plot_magnitude: If True, plots the magnitude of the radar signal. Defaults to False.
+        :param wavelet_type : The type of the wavelet to use for the transform. Defaults to 'morl'.
+        :param wavelet_coefficients : The range of scales to use for the wavelet transform.
+        Defaults to (1, 256).
+        :param signal_type : The type of the signal. Defaults to an empty string.
+        :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
+        """
+        if wavelet_coefficients is None:
+            raise WaveletCoefficientsNotProvidedError()
+
+        if plot_magnitude:
+            radar_signal = np.abs(radar_signal)
+
+        scales = np.arange(wavelet_coefficients[0], wavelet_coefficients[1])
+        coefficients, frequencies = pywt.cwt(radar_signal, scales, wavelet_type)
+        time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
+
+        # Apply percentile scaling to coefficients
+        p10 = scoreatpercentile(np.abs(coefficients), 10)
+        p90 = scoreatpercentile(np.abs(coefficients), 90)
+        coefficients = (np.abs(coefficients) - p10) / (p90 - p10)
+
+        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
+        cax = ax.imshow(
+            coefficients,
+            aspect="auto",
+            cmap="jet",
+            extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+        )
+        fig.colorbar(cax, ax=ax, label="Magnitude (Percentile Scaled)")
         ax.set_yscale("log")
         ax.set_ylabel("Scale (Inverse of Frequency)")
         ax.set_xlabel("Time (seconds)")
@@ -192,8 +353,9 @@ class RadarPlotter:
         )
         zxx_shifted = np.fft.fftshift(zxx, axes=0)
         frequencies_shifted = np.fft.fftshift(frequencies)
+        zxx_shifted = np.abs(zxx_shifted)
         if decibel_as_unit:
-            zxx_shifted = 10 * np.log10(np.abs(zxx_shifted))
+            zxx_shifted = 10 * np.log10(zxx_shifted)
         fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         cax = ax.pcolormesh(times, frequencies_shifted, zxx_shifted, shading="nearest")
         ax.set_title(f"STFT Spectrogram {signal_type}")
