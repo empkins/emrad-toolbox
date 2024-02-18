@@ -48,6 +48,7 @@ class RadarPlotter:
         wavelet_coefficients: Tuple[int, int] = (1, 256),
         signal_type: str = "",
         ax=None,
+        log_scale: bool = False,
     ):
         """
         Plot the wavelet transform of a radar signal.
@@ -62,6 +63,7 @@ class RadarPlotter:
         Defaults to (1, 256).
         :param signal_type : The type of the signal. Defaults to an empty string.
         :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
+        :param log_scale : If True, uses a log scale for the magnitude. Defaults to False.
         """
         if wavelet_coefficients is None:
             raise WaveletCoefficientsNotProvidedError()
@@ -72,6 +74,9 @@ class RadarPlotter:
         scales = np.arange(wavelet_coefficients[0], wavelet_coefficients[1])
         coefficients, frequencies = pywt.cwt(radar_signal, scales, wavelet_type)
         time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
+
+        if log_scale:
+            coefficients = RadarPlotter._log_scale_magnitude(coefficients)
 
         fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         cax = ax.imshow(
@@ -97,6 +102,7 @@ class RadarPlotter:
         signal_type: str = "",
         ax=None,
         threshold_factor: float = 3.0,
+        log_scale: bool = False,
     ):
         """
         Plot the wavelet transform of a radar signal.
@@ -112,6 +118,7 @@ class RadarPlotter:
         :param signal_type : The type of the signal. Defaults to an empty string.
         :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
         :param threshold_factor: The factor to multiply the standard deviation by to get the threshold. Defaults to 3.0.
+        :param log_scale : If True, uses a log scale for the magnitude. Defaults to False.
         """
         if wavelet_coefficients is None:
             raise WaveletCoefficientsNotProvidedError()
@@ -124,8 +131,13 @@ class RadarPlotter:
         time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
 
         # Apply adaptive threshold to coefficients
-        threshold = np.mean(np.abs(coefficients)) + threshold_factor * np.std(np.abs(coefficients))
-        coefficients = np.where(np.abs(coefficients) > threshold, threshold, np.abs(coefficients))
+        upper_threshold = np.mean(np.abs(coefficients)) + threshold_factor * np.std(np.abs(coefficients))
+        coefficients = np.where(np.abs(coefficients) > upper_threshold, upper_threshold, np.abs(coefficients))
+        lower_threshold = np.mean(np.abs(coefficients)) - threshold_factor * np.std(np.abs(coefficients))
+        coefficients = np.where(np.abs(coefficients) < lower_threshold, lower_threshold, np.abs(coefficients))
+
+        if log_scale:
+            coefficients = RadarPlotter._log_scale_magnitude(coefficients)
 
         fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         cax = ax.imshow(
@@ -150,6 +162,7 @@ class RadarPlotter:
         wavelet_coefficients: Tuple[int, int] = (1, 256),
         signal_type: str = "",
         ax=None,
+        log_scale: bool = False,
     ):
         """
         Plot the wavelet transform of a radar signal.
@@ -164,6 +177,7 @@ class RadarPlotter:
         Defaults to (1, 256).
         :param signal_type : The type of the signal. Defaults to an empty string.
         :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
+        :param log_scale : If True, uses a log scale for the magnitude. Defaults to False.
         """
         if wavelet_coefficients is None:
             raise WaveletCoefficientsNotProvidedError()
@@ -178,6 +192,9 @@ class RadarPlotter:
         # Apply standard scaling to coefficients
         scaler = StandardScaler()
         coefficients = scaler.fit_transform(np.abs(coefficients))
+
+        if log_scale:
+            coefficients = RadarPlotter._log_scale_magnitude(coefficients)
 
         fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         cax = ax.imshow(
@@ -202,6 +219,9 @@ class RadarPlotter:
         wavelet_coefficients: Tuple[int, int] = (1, 256),
         signal_type: str = "",
         ax=None,
+        log_scale: bool = False,
+        lower_percentile: int = 10,
+        upper_percentile: int = 90,
     ):
         """
         Plot the wavelet transform of a radar signal.
@@ -216,6 +236,9 @@ class RadarPlotter:
         Defaults to (1, 256).
         :param signal_type : The type of the signal. Defaults to an empty string.
         :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
+        :param log_scale : If True, uses a log scale for the magnitude. Defaults to False.
+        :param lower_percentile : The lower percentile to use for scaling. Defaults to 10.
+        :param upper_percentile : The upper percentile to use for scaling. Defaults to 90.
         """
         if wavelet_coefficients is None:
             raise WaveletCoefficientsNotProvidedError()
@@ -228,9 +251,12 @@ class RadarPlotter:
         time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
 
         # Apply percentile scaling to coefficients
-        p10 = scoreatpercentile(np.abs(coefficients), 10)
-        p90 = scoreatpercentile(np.abs(coefficients), 90)
+        p10 = scoreatpercentile(np.abs(coefficients), lower_percentile)
+        p90 = scoreatpercentile(np.abs(coefficients), upper_percentile)
         coefficients = (np.abs(coefficients) - p10) / (p90 - p10)
+
+        if log_scale:
+            coefficients = RadarPlotter._log_scale_magnitude(coefficients)
 
         fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         cax = ax.imshow(
@@ -462,3 +488,7 @@ class RadarPlotter:
             ax[i].set_xlabel("Time")
             ax[i].set_ylabel("Magnitude")
         return fig
+
+    @staticmethod
+    def _log_scale_magnitude(magnitude: np.array) -> np.array:
+        return np.where(magnitude == 0, -np.inf, np.log10(np.abs(magnitude)))
