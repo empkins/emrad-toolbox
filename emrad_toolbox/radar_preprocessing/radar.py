@@ -6,6 +6,7 @@ import numpy as np
 import pywt
 from numba import njit
 from scipy.signal import butter, decimate, filtfilt, find_peaks, hilbert, sosfilt
+from vmdpy import VMD
 
 from emrad_toolbox.radar_preprocessing.preprocessing_exceptions import (
     ScalingFactorsNotProvidedError,
@@ -364,3 +365,23 @@ class RadarPreprocessor:
             i,
             gathered_coefficients[i - scaling_factor_range[0]][0],
         )
+
+    @staticmethod
+    def apply_vmd(radar_signal, alpha, tau, k, dc, init, tol):  # noqa: PLR0913
+        """
+        Apply Variational Mode Decomposition on a complex signal.
+
+        :param radar_signal (np.array): The complex signal to decompose.
+        :param alpha (float): The balancing parameter of the data-fidelity constraint.
+        :param tau (float): The noise-tolerance (no strict fidelity enforcement).
+        :param k (int): The number of modes to be recovered.
+        :param dc (bool): Whether to include DC mode.
+        :param init (int): The initialization method.
+        :param tol (float): The tolerance of convergence criterion.
+
+        :return u (np.array): The decomposed modes.
+        :return u_hat (np.array): The spectrum of the modes.
+        :return omega (np.array): The center frequencies of the modes.
+        """
+        u, u_hat, omega = VMD(radar_signal, alpha, tau, k, dc, init, tol)
+        return u, u_hat, omega

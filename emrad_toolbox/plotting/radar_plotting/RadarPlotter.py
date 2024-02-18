@@ -186,8 +186,13 @@ class RadarPlotter:
             radar_signal = np.abs(radar_signal)
 
         scales = np.arange(wavelet_coefficients[0], wavelet_coefficients[1])
-        coefficients, frequencies = pywt.cwt(radar_signal, scales, wavelet_type)
+        sampling_period = len(radar_signal) / sampling_rate
+        scales = pywt.frequency2scale(wavelet_type, freq=sampling_rate / sampling_period)
+
         time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
+        coefficients, frequencies = pywt.cwt(
+            radar_signal, scales, wavelet_type, sampling_period=len(radar_signal) / sampling_rate
+        )
 
         # Apply standard scaling to coefficients
         scaler = StandardScaler()
@@ -204,8 +209,8 @@ class RadarPlotter:
             extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
         )
         fig.colorbar(cax, ax=ax, label="Magnitude (Standard Scaled)")
-        ax.set_yscale("log")
-        ax.set_ylabel("Scale (Inverse of Frequency)")
+        # ax.set_yscale("log")
+        ax.set_ylabel("Frequency (Hz)")
         ax.set_xlabel("Time (seconds)")
         ax.set_title(f"Wavelet Transform of Magnitude with {wavelet_type} wavelet {signal_type}")
         return fig
@@ -492,3 +497,29 @@ class RadarPlotter:
     @staticmethod
     def _log_scale_magnitude(magnitude: np.array) -> np.array:
         return np.where(magnitude == 0, -np.inf, np.log10(np.abs(magnitude)))
+
+    @staticmethod
+    def plot_variational_mode_decomposition(u: np.array, omega: np.array, sampling_rate: float, ax=None, **kwargs):
+        """
+        Plot the Variational Mode Decomposition (VMD) of a radar signal.
+
+        Parameters
+        ----------
+        :param u : The decomposed modes of the VMD.
+        :param omega : The center frequencies of the VMD.
+        :param sampling_rate : The sampling rate of the radar signal.
+        :param ax : The axes object to draw the plot on. If None, a new figure and axes are created.
+        """
+        num_modes = u.shape[0]
+        time = np.arange(u.shape[1]) / sampling_rate
+
+        fig, axs = plt.subplots(num_modes, 1, figsize=(10, 2 * num_modes))
+
+        for i in range(num_modes):
+            axs[i].plot(time, u[i])
+            axs[i].set_title(f"Mode {i+1}, Center Frequency: {omega[i]}")
+            axs[i].set_xlabel("Time [sec]")
+            axs[i].set_ylabel("Amplitude")
+
+        plt.tight_layout()
+        return fig

@@ -738,6 +738,16 @@ files = [
 ]
 
 [[package]]
+name = "markdown"
+version = "2.6.8"
+description = "Python implementation of Markdown."
+optional = false
+python-versions = "*"
+files = [
+    {file = "Markdown-2.6.8.tar.gz", hash = "sha256:0ac8a81e658167da95d063a9279c9c1b2699f37c7c4153256a458b3a43860e33"},
+]
+
+[[package]]
 name = "markupsafe"
 version = "2.1.4"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -1959,6 +1969,32 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
+name = "vmd"
+version = "0.1.1"
+description = "Terminal Markdown Renderer"
+optional = false
+python-versions = "*"
+files = [
+    {file = "vmd-0.1.1.tar.gz", hash = "sha256:81f09c42ace2365a413fed6fd46393b7e6675f871333e89ecb63756504545fb9"},
+]
+
+[package.dependencies]
+Markdown = "2.6.8"
+
+[[package]]
+name = "vmdpy"
+version = "0.2"
+description = "Variational Mode Decomposition (VMD) algorithm"
+optional = false
+python-versions = "*"
+files = [
+    {file = "vmdpy-0.2-py2.py3-none-any.whl", hash = "sha256:331e3013dbc95beb564fe7ce70a0f95a09efb44d0ec56a28f61e9ab40fe16c1b"},
+]
+
+[package.dependencies]
+numpy = "*"
+
+[[package]]
 name = "zipp"
 version = "3.17.0"
 description = "Backport of pathlib-compatible object wrapper for zip files"
@@ -1976,4 +2012,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "c80dae1b771eb478b25b8a264e3b3e89117f307c9ebe06975a58a5c56fdda464"
+content-hash = "5d71c28195b6b2304bf2bee03977542a87a0198b0db6a3fb1c6b904a25b10430"

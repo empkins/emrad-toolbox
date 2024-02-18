@@ -14,6 +14,8 @@ scipy = "^1.12.0"
 numba = "^0.58.1"
 pywavelets = "^1.5.0"
 emd-signal = "^1.5.2"
+vmdpy = "^0.2"
+vmd = "^0.1.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"
