@@ -274,7 +274,7 @@ class RadarPlotter:
         return fig
 
     @staticmethod
-    def plot_wavelet_robust(
+    def plot_wavelet_robust(  # noqa: PLR0913
         radar_signal: np.array,
         sampling_rate: float,
         plot_magnitude: bool = False,
@@ -283,6 +283,7 @@ class RadarPlotter:
         signal_type: str = "",
         ax=None,
         log_scale: bool = False,
+        quantile_range: Tuple[float, float] = (25.0, 75.0),
     ):
         """
         Plot the wavelet transform of a scaled radar signal (using the RobustScaler from sklearn.preprocessing).
@@ -298,6 +299,7 @@ class RadarPlotter:
         :param signal_type : The type of the signal. Defaults to an empty string.
         :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
         :param log_scale : If True, uses a log scale for the magnitude. Defaults to False.
+        :param quantile_range : The range of quantiles to use for scaling. Defaults to (25.0, 75.0).
         """
         if wavelet_coefficients is None:
             raise WaveletCoefficientsNotProvidedError()
@@ -312,7 +314,7 @@ class RadarPlotter:
         time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
 
         # Apply standard scaling to coefficients
-        scaler = RobustScaler()
+        scaler = RobustScaler(quantile_range=quantile_range)
         coefficients = scaler.fit_transform(np.abs(coefficients))
 
         if log_scale:
@@ -325,7 +327,7 @@ class RadarPlotter:
             cmap="jet",
             extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
         )
-        fig.colorbar(cax, ax=ax, label="Magnitude (Standard Scaled)")
+        fig.colorbar(cax, ax=ax, label="Magnitude (Robust Scaled)")
         ax.set_yscale("log")
         ax.set_ylabel("Frequency (Hz)")
         ax.set_xlabel("Time (seconds)")
