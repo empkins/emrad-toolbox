@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pywt
 from numba import njit
+from pedalboard import Compressor
 from scipy.signal import butter, decimate, filtfilt, find_peaks, hilbert, sosfilt
 from vmdpy import VMD
 
@@ -387,25 +388,32 @@ class RadarPreprocessor:
         return u, u_hat, omega
 
     @staticmethod
-    def apply_dynamic_range_compressor(
+    def apply_dynamic_range_compressor(  # noqa: PLR0913
         input_signal: np.array,
         threshold: float = -10.0,
+        sampling_rate: float = 1953.125,
         ratio: float = 5.0,
+        attack_ms: float = 10,
+        release_ms: float = 100,
     ) -> np.array:
         """
-        Apply a dynamic range compressor to a complex signal. Only Signals above the threshold are compressed.
+        Apply a dynamic range compressor to a complex signal. Uses the pedalboard library.
 
+        :param release_ms:
+        :param attack_ms:
+        :param sampling_rate:
         :param input_signal: The complex signal to compress.
         :param threshold: The threshold value for the compressor, in dB.
         :param ratio: The compression ratio.
         :return: The compressed complex signal.
         """
-        magnitude = np.abs(input_signal)
-        phase = np.angle(input_signal)
+        output_signal = input_signal.copy()
 
-        compressed_magnitude = magnitude.copy()
-        above_threshold = magnitude > threshold
-        compressed_magnitude[above_threshold] = threshold + (magnitude[above_threshold] - threshold) / ratio
-        output_signal = compressed_magnitude * np.exp(1j * phase)
-
+        compressor = Compressor(
+            threshold_db=threshold,
+            ratio=ratio,
+            attack_ms=attack_ms,
+            release_ms=release_ms,
+        )
+        compressor.process(output_signal, sample_rate=sampling_rate)
         return output_signal
