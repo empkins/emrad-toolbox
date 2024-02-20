@@ -385,3 +385,27 @@ class RadarPreprocessor:
         """
         u, u_hat, omega = VMD(radar_signal, alpha, tau, k, dc, init, tol)
         return u, u_hat, omega
+
+    @staticmethod
+    def apply_dynamic_range_compressor(
+        input_signal: np.array,
+        threshold: float = -10.0,
+        ratio: float = 5.0,
+    ) -> np.array:
+        """
+        Apply a dynamic range compressor to a complex signal. Only Signals above the threshold are compressed.
+
+        :param input_signal: The complex signal to compress.
+        :param threshold: The threshold value for the compressor, in dB.
+        :param ratio: The compression ratio.
+        :return: The compressed complex signal.
+        """
+        magnitude = np.abs(input_signal)
+        phase = np.angle(input_signal)
+
+        compressed_magnitude = magnitude.copy()
+        above_threshold = magnitude > threshold
+        compressed_magnitude[above_threshold] = threshold + (magnitude[above_threshold] - threshold) / ratio
+        output_signal = compressed_magnitude * np.exp(1j * phase)
+
+        return output_signal

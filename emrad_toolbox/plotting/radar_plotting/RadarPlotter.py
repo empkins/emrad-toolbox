@@ -132,8 +132,8 @@ class RadarPlotter:
 
         # Apply adaptive threshold to coefficients
         upper_threshold = np.mean(np.abs(coefficients)) + threshold_factor * np.std(np.abs(coefficients))
-        coefficients = np.where(np.abs(coefficients) > upper_threshold, upper_threshold, np.abs(coefficients))
         lower_threshold = np.mean(np.abs(coefficients)) - threshold_factor * np.std(np.abs(coefficients))
+        coefficients = np.where(np.abs(coefficients) > upper_threshold, upper_threshold, np.abs(coefficients))
         coefficients = np.where(np.abs(coefficients) < lower_threshold, lower_threshold, np.abs(coefficients))
 
         if log_scale:
