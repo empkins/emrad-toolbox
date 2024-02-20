@@ -75,9 +75,16 @@ class RadarPlotter:
         coefficients, frequencies = pywt.cwt(radar_signal, scales, wavelet_type)
         time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
 
+        return RadarPlotter._get_wavelet_figure(
+            ax, coefficients, frequencies, log_scale, signal_type, time, wavelet_type
+        )
+
+    @staticmethod
+    def _get_wavelet_figure(  # noqa: PLR0913
+        ax, coefficients, frequencies, log_scale, signal_type, time, wavelet_type, color_bar_label: str = "Magnitude"
+    ):
         if log_scale:
             coefficients = RadarPlotter._log_scale_magnitude(coefficients)
-
         fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
         cax = ax.imshow(
             np.abs(coefficients),
@@ -85,7 +92,7 @@ class RadarPlotter:
             cmap="jet",
             extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
         )
-        fig.colorbar(cax, ax=ax, label="Magnitude")
+        fig.colorbar(cax, ax=ax, label=f"{color_bar_label}")
         ax.set_yscale("log")
         ax.set_ylabel("Scale (Inverse of Frequency)")
         ax.set_xlabel("Time (seconds)")
@@ -136,22 +143,9 @@ class RadarPlotter:
         coefficients = np.where(np.abs(coefficients) > upper_threshold, upper_threshold, np.abs(coefficients))
         coefficients = np.where(np.abs(coefficients) < lower_threshold, lower_threshold, np.abs(coefficients))
 
-        if log_scale:
-            coefficients = RadarPlotter._log_scale_magnitude(coefficients)
-
-        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
-        cax = ax.imshow(
-            coefficients,
-            aspect="auto",
-            cmap="jet",
-            extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+        return RadarPlotter._get_wavelet_figure(
+            ax, coefficients, frequencies, log_scale, signal_type, time, wavelet_type, "Magnitude (Adaptive Threshold)"
         )
-        fig.colorbar(cax, ax=ax, label="Magnitude (Adaptive Threshold)")
-        ax.set_yscale("log")
-        ax.set_ylabel("Scale (Inverse of Frequency)")
-        ax.set_xlabel("Time (seconds)")
-        ax.set_title(f"Wavelet Transform of Magnitude with {wavelet_type} wavelet {signal_type}")
-        return fig
 
     @staticmethod
     def plot_wavelet_z_scaled(  # noqa: PLR0913
@@ -195,22 +189,16 @@ class RadarPlotter:
         scaler = StandardScaler()
         coefficients = scaler.fit_transform(np.abs(coefficients))
 
-        if log_scale:
-            coefficients = RadarPlotter._log_scale_magnitude(coefficients)
-
-        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
-        cax = ax.imshow(
+        return RadarPlotter._get_wavelet_figure(
+            ax,
             coefficients,
-            aspect="auto",
-            cmap="jet",
-            extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+            frequencies,
+            log_scale,
+            signal_type,
+            time,
+            wavelet_type,
+            color_bar_label="Magnitude (Z Scaled)",
         )
-        fig.colorbar(cax, ax=ax, label="Magnitude (Standard Scaled)")
-        ax.set_yscale("log")
-        ax.set_ylabel("Frequency (Hz)")
-        ax.set_xlabel("Time (seconds)")
-        ax.set_title(f"Wavelet Transform of Magnitude with {wavelet_type} wavelet {signal_type}")
-        return fig
 
     @staticmethod
     def plot_wavelet_percentile_scaled(  # noqa: PLR0913
@@ -256,22 +244,16 @@ class RadarPlotter:
         p90 = scoreatpercentile(np.abs(coefficients), upper_percentile)
         coefficients = (np.abs(coefficients) - p10) / (p90 - p10)
 
-        if log_scale:
-            coefficients = RadarPlotter._log_scale_magnitude(coefficients)
-
-        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
-        cax = ax.imshow(
+        return RadarPlotter._get_wavelet_figure(
+            ax,
             coefficients,
-            aspect="auto",
-            cmap="jet",
-            extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+            frequencies,
+            log_scale,
+            signal_type,
+            time,
+            wavelet_type,
+            color_bar_label="Magnitude (Percentile Scaled)",
         )
-        fig.colorbar(cax, ax=ax, label="Magnitude (Percentile Scaled)")
-        ax.set_yscale("log")
-        ax.set_ylabel("Scale (Inverse of Frequency)")
-        ax.set_xlabel("Time (seconds)")
-        ax.set_title(f"Wavelet Transform of Magnitude with {wavelet_type} wavelet {signal_type}")
-        return fig
 
     @staticmethod
     def plot_wavelet_robust(  # noqa: PLR0913
@@ -317,22 +299,16 @@ class RadarPlotter:
         scaler = RobustScaler(quantile_range=quantile_range)
         coefficients = scaler.fit_transform(np.abs(coefficients))
 
-        if log_scale:
-            coefficients = RadarPlotter._log_scale_magnitude(coefficients)
-
-        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
-        cax = ax.imshow(
+        return RadarPlotter._get_wavelet_figure(
+            ax,
             coefficients,
-            aspect="auto",
-            cmap="jet",
-            extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
+            frequencies,
+            log_scale,
+            signal_type,
+            time,
+            wavelet_type,
+            color_bar_label="Magnitude (Robust Scaled)",
         )
-        fig.colorbar(cax, ax=ax, label="Magnitude (Robust Scaled)")
-        ax.set_yscale("log")
-        ax.set_ylabel("Frequency (Hz)")
-        ax.set_xlabel("Time (seconds)")
-        ax.set_title(f"Wavelet Transform of Magnitude with {wavelet_type} wavelet {signal_type}")
-        return fig
 
     @staticmethod
     def plot_fft_spectrogram(  # noqa: PLR0913

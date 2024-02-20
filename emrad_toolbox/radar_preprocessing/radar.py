@@ -408,7 +408,7 @@ class RadarPreprocessor:
         :return: The compressed complex signal.
         """
         output_signal = input_signal.copy()
-
+        output_signal_phase = np.angle(output_signal)
         compressor = Compressor(
             threshold_db=threshold,
             ratio=ratio,
@@ -416,4 +416,5 @@ class RadarPreprocessor:
             release_ms=release_ms,
         )
         compressor.process(output_signal, sample_rate=sampling_rate)
-        return output_signal
+        output_signal_complex = output_signal * np.exp(1j * output_signal_phase)
+        return output_signal_complex
