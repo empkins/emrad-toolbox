@@ -192,7 +192,7 @@ class RadarPlotter:
         coefficients, frequencies = pywt.cwt(radar_signal, scales, wavelet_type)
 
         return RadarPlotter._get_wavelet_figure(
-            ax, coefficients, frequencies, log_scale, signal_type, time, wavelet_type, "Magnitude (Adaptive Threshold)"
+            ax, coefficients, frequencies, log_scale, signal_type, time, wavelet_type, "Magnitude (Winsorizing)"
         )
 
     @staticmethod

@@ -6,7 +6,7 @@ import numpy as np
 import pywt
 from numba import njit
 from pedalboard import Compressor
-from scipy.signal import butter, decimate, filtfilt, find_peaks, hilbert, sosfilt
+from scipy.signal import butter, correlate, decimate, filtfilt, find_peaks, hilbert, sosfilt
 from vmdpy import VMD
 
 from emrad_toolbox.radar_preprocessing.preprocessing_exceptions import (
@@ -293,16 +293,11 @@ class RadarPreprocessor:
         """
         Apply a matched filter to a complex radar signal.
 
-        The matched filter is created by taking the complex conjugate of the expected signal and reversing it in time.
-        The radar signal is then convolved with this matched filter.
-
         :param radar_signal: The complex radar signal to which the matched filter is to be applied.
         :param expected_signal: The expected signal used to create the matched filter.
         :return: The filtered signal after applying the matched filter.
         """
-        matched_filter = np.conj(expected_signal[::-1])
-        filtered_signal = np.convolve(radar_signal, matched_filter, mode="same")
-        return filtered_signal
+        return correlate(radar_signal, expected_signal, mode="same") / len(expected_signal)
 
     @staticmethod
     def svd_and_matched_filter(radar_signal, window_size):
@@ -393,8 +388,8 @@ class RadarPreprocessor:
         threshold: float = -10.0,
         sampling_rate: float = 1953.125,
         ratio: float = 5.0,
-        attack_ms: float = 10,
-        release_ms: float = 100,
+        attack_ms: float = 0,
+        release_ms: float = 0,
     ) -> np.array:
         """
         Apply a dynamic range compressor to a complex signal.
