@@ -404,8 +404,8 @@ class RadarPreprocessor:
         :param ratio: The compression ratio.
         :return: The compressed complex signal.
         """
-        output_signal = input_signal.copy()
-        output_signal_phase = np.angle(output_signal)
+        output_signal = np.abs(input_signal)
+        output_signal_phase = np.angle(input_signal)
         compressor = Compressor(
             threshold_db=threshold,
             ratio=ratio,
