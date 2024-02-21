@@ -397,7 +397,9 @@ class RadarPreprocessor:
         release_ms: float = 100,
     ) -> np.array:
         """
-        Apply a dynamic range compressor to a complex signal. Uses the pedalboard library.
+        Apply a dynamic range compressor to a complex signal.
+
+        Uses the pedalboard library (https://spotify.github.io/pedalboard/).
 
         :param release_ms:
         :param attack_ms:

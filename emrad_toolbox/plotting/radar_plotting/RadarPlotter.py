@@ -7,6 +7,7 @@ from PyEMD import EMD
 from scipy import fft
 from scipy.signal import spectrogram, stft
 from scipy.stats import scoreatpercentile
+from scipy.stats.mstats import winsorize
 from sklearn.preprocessing import RobustScaler, StandardScaler
 
 from emrad_toolbox.plotting.radar_plotting.PlottingExceptions import WaveletCoefficientsNotProvidedError
@@ -142,6 +143,53 @@ class RadarPlotter:
         lower_threshold = np.mean(np.abs(coefficients)) - threshold_factor * np.std(np.abs(coefficients))
         coefficients = np.where(np.abs(coefficients) > upper_threshold, upper_threshold, np.abs(coefficients))
         coefficients = np.where(np.abs(coefficients) < lower_threshold, lower_threshold, np.abs(coefficients))
+
+        return RadarPlotter._get_wavelet_figure(
+            ax, coefficients, frequencies, log_scale, signal_type, time, wavelet_type, "Magnitude (Adaptive Threshold)"
+        )
+
+    @staticmethod
+    def plot_wavelet_winsorizing(  # noqa: PLR0913
+        radar_signal: np.array,
+        sampling_rate: float,
+        plot_magnitude: bool = False,
+        wavelet_type: str = "morl",
+        wavelet_coefficients: Tuple[int, int] = (1, 256),
+        signal_type: str = "",
+        ax=None,
+        limits: Tuple[float, float] = (25.0, 75.0),
+        log_scale: bool = False,
+    ):
+        """
+        Plot the wavelet transform of a radar signal.
+
+        Parameters
+        ----------
+        :param radar_signal: The radar signal to plot.
+        :param sampling_rate : The sampling rate of the radar signal.
+        :param plot_magnitude: If True, plots the magnitude of the radar signal. Defaults to False.
+        :param wavelet_type : The type of the wavelet to use for the transform. Defaults to 'morl'.
+        :param wavelet_coefficients : The range of scales to use for the wavelet transform.
+        Defaults to (1, 256).
+        :param signal_type : The type of the signal. Defaults to an empty string.
+        :param ax: The axes object to draw the plot on. If None, a new figure and axes are created.
+        :param limits: The limits for the winsorizing in percent. Defaults to (25.0, 75.0).
+        :param log_scale : If True, uses a log scale for the magnitude. Defaults to False.
+        """
+        if wavelet_coefficients is None:
+            raise WaveletCoefficientsNotProvidedError()
+
+        if plot_magnitude:
+            radar_signal = np.abs(radar_signal)
+            radar_signal = winsorize(radar_signal, limits=limits)
+        else:
+            radar_signal_mag = np.abs(radar_signal)
+            radar_signal_mag = winsorize(radar_signal_mag, limits=limits)
+            radar_signal = radar_signal_mag * np.exp(1j * np.angle(radar_signal))
+
+        time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
+        scales = np.arange(wavelet_coefficients[0], wavelet_coefficients[1])
+        coefficients, frequencies = pywt.cwt(radar_signal, scales, wavelet_type)
 
         return RadarPlotter._get_wavelet_figure(
             ax, coefficients, frequencies, log_scale, signal_type, time, wavelet_type, "Magnitude (Adaptive Threshold)"
