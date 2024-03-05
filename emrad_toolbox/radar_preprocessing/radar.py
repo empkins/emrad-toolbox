@@ -4,7 +4,6 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import pywt
-from numba import njit
 from pedalboard import Compressor
 from scipy.signal import butter, correlate, decimate, filtfilt, find_peaks, hilbert, sosfilt
 from vmdpy import VMD
@@ -18,7 +17,6 @@ class RadarPreprocessor:
     """RadarPreprocessor - A collection of static function to handle Radar data, such as applying filters."""
 
     @staticmethod
-    @njit
     def calculate_angle(i: np.array, q: np.array) -> np.array:
         """Calculate the angle of the complex signal.
 
@@ -31,7 +29,6 @@ class RadarPreprocessor:
         return angle
 
     @staticmethod
-    @njit
     def calculate_power(i: np.array, q: np.array) -> np.array:
         """Calculate the power of the complex signal.
 
