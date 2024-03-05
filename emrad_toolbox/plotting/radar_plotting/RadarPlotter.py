@@ -50,6 +50,7 @@ class RadarPlotter:
         signal_type: str = "",
         ax=None,
         log_scale: bool = False,
+        **kwargs,
     ):
         """
         Plot the wavelet transform of a radar signal.
@@ -77,12 +78,20 @@ class RadarPlotter:
         time = np.arange(0, len(radar_signal) / sampling_rate, 1 / sampling_rate)
 
         return RadarPlotter._get_wavelet_figure(
-            ax, coefficients, frequencies, log_scale, signal_type, time, wavelet_type
+            ax, coefficients, frequencies, log_scale, signal_type, time, wavelet_type, **kwargs
         )
 
     @staticmethod
     def _get_wavelet_figure(  # noqa: PLR0913
-        ax, coefficients, frequencies, log_scale, signal_type, time, wavelet_type, color_bar_label: str = "Magnitude"
+        ax,
+        coefficients,
+        frequencies,
+        log_scale,
+        signal_type,
+        time,
+        wavelet_type,
+        color_bar_label: str = "Magnitude",
+        **kwargs,
     ):
         if log_scale:
             coefficients = RadarPlotter._log_scale_magnitude(coefficients)
@@ -93,7 +102,11 @@ class RadarPlotter:
             cmap="jet",
             extent=[time.min(), time.max(), frequencies.min(), frequencies.max()],
         )
-        fig.colorbar(cax, ax=ax, label=f"{color_bar_label}")
+        set_color_bar = True
+        if "color_bar" in kwargs:
+            set_color_bar = kwargs["color_bar"]
+        if set_color_bar:
+            fig.colorbar(cax, ax=ax, label=f"{color_bar_label}")
         ax.set_yscale("log")
         ax.set_ylabel("Scale (Inverse of Frequency)")
         ax.set_xlabel("Time (seconds)")
