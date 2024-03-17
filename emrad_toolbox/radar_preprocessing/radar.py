@@ -435,6 +435,7 @@ class RadarPreprocessor:
         first_signal = first_signal.astype(bool)
         second_signal = second_signal.astype(bool)
         sync = np.sum(first_signal != second_signal)
+        print(sync)
         if sync > 30:
             return False
         return True
