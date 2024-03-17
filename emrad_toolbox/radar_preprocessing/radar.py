@@ -3,6 +3,7 @@
 from typing import Dict, List, Tuple
 
 import numpy as np
+import pandas as pd
 import pywt
 from pedalboard import Compressor
 from scipy.signal import butter, correlate, decimate, filtfilt, find_peaks, hilbert, sosfilt
@@ -412,3 +413,28 @@ class RadarPreprocessor:
         compressor.process(output_signal, sample_rate=sampling_rate)
         output_signal_complex = output_signal * np.exp(1j * output_signal_phase)
         return output_signal_complex
+
+    @staticmethod
+    def check_sync(first_signal: pd.Series, second_signal: pd.Series) -> bool:
+        """
+        Check if two signals are synchronized.
+
+        This method compares the lengths of the two signals and their boolean representations.
+        If the lengths are not equal or the number of differing elements in the boolean representations
+        exceeds 30, the method returns False, indicating that the signals are not synchronized.
+        Otherwise, it returns True.
+
+        :param first_signal: The first signal to be checked for synchronization, as a pandas Series.
+        :param second_signal: The second signal to be checked for synchronization, as a pandas Series.
+        :return: True if the signals are synchronized, False otherwise.
+        """
+        if len(first_signal) != len(second_signal):
+            return False
+        first_signal = first_signal.to_numpy()
+        second_signal = second_signal.to_numpy()
+        first_signal = first_signal.astype(bool)
+        second_signal = second_signal.astype(bool)
+        sync = np.sum(first_signal != second_signal)
+        if sync > 30:
+            return False
+        return True
